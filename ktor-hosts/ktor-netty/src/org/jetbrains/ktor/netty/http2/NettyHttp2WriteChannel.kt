@@ -4,13 +4,13 @@ import io.netty.buffer.*
 import io.netty.channel.*
 import io.netty.handler.codec.http2.*
 import io.netty.util.concurrent.*
+import org.jetbrains.ktor.netty.*
 import org.jetbrains.ktor.nio.*
 import java.io.*
 import java.nio.*
 import java.util.concurrent.atomic.*
 
-class NettyHttp2WriteChannel(val streamId: Int, val context: ChannelHandlerContext, val encoder: Http2ConnectionEncoder) : WriteChannel {
-
+internal class NettyHttp2WriteChannel(val context: ChannelHandlerContext) : WriteChannel {
     @Volatile
     private var lastPromise: ChannelPromise? = null
 
@@ -62,7 +62,9 @@ class NettyHttp2WriteChannel(val streamId: Int, val context: ChannelHandlerConte
     override fun close() {
         if (closed.compareAndSet(false, true)) {
             fun sendEnd() {
-                encoder.writeData(context, streamId, Unpooled.EMPTY_BUFFER, 0, true, context.channel().newPromise())
+                context.executeInLoop {
+                    context.writeAndFlush(DefaultHttp2DataFrame(true))
+                }
             }
 
             lastPromise?.addListener { sendEnd() } ?: run { sendEnd() }
@@ -80,16 +82,17 @@ class NettyHttp2WriteChannel(val streamId: Int, val context: ChannelHandlerConte
         }
         currentBuffer = src
 
-        writeImpl(Unpooled.wrappedBuffer(src)).addListener(writeFutureListener)
+        context.executeInLoop(writeImpl)
     }
 
-    private fun writeImpl(data: ByteBuf): ChannelPromise {
+    private val writeImpl = Runnable {
+        val data = Unpooled.wrappedBuffer(currentBuffer!!)
+
         val promise = context.channel().newPromise()
         lastPromise = promise
 
-        encoder.writeData(context, streamId, data, 0, false, promise)
+        context.writeAndFlush(DefaultHttp2DataFrame(data, false), promise)
 
-        return promise
+        promise.addListener(writeFutureListener)
     }
-
 }
