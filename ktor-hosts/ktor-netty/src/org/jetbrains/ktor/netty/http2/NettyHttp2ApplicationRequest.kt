@@ -14,7 +14,7 @@ internal class NettyHttp2ApplicationRequest(override val call: ApplicationCall, 
     override val parameters: ValuesMap
         get() = ValuesMap.Empty // TODO
 
-    override val localRoute = object : RequestSocketRoute {
+    override val local = object : RequestConnectionPoint {
         override val method: HttpMethod = nettyHeaders.method()?.let { HttpMethod.parse(it.toString()) } ?: HttpMethod.Get
 
         override val scheme: String
