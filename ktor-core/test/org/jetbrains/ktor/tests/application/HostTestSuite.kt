@@ -655,7 +655,7 @@ abstract class HostTestSuite : HostTestBase() {
         createAndStartServer() {
             install(XForwardedHeadersSupport)
             get("/") {
-                call.respond(call.url {  })
+                call.respond(call.url { })
             }
         }
 
