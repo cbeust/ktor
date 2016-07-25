@@ -117,6 +117,7 @@ class TomcatApplicationHost(override val hostConfig: ApplicationHostConfig,
                 val nativeName = nativeNames.firstOrNull { tryLoadLibrary(it) }
                 if (nativeName != null) {
                     Library.initialize(nativeName)
+                    SSL.initialize(null)
                     OpenSSLImplementation::class.java
                 } else {
                     JSSEImplementation::class.java
