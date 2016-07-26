@@ -11,6 +11,10 @@ abstract class KtorServlet : HttpServlet() {
     abstract val application: Application
 
     override fun service(request: HttpServletRequest, response: HttpServletResponse) {
+        if (response.isCommitted) {
+            return
+        }
+
         response.characterEncoding = "UTF-8"
         request.characterEncoding = "UTF-8"
 
